@@ -28,7 +28,7 @@
                 try {
                     if (!navigator.bluetooth) {
                         // show modal to user "it seems that your browser does not support bluetooth, please use another browser"
-                        console.error('Web Bluetooth is not supported in your browser');
+                        window.alert('Your browser does not support Bluetooth Mesh. Please use a different browser.');
                     }
                     // create a new mesh object
                     mesh = await initializeBluetoothMesh();
