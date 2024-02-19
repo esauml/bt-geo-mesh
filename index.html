@@ -1,0 +1,145 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Hola mundo</h1>
+
+    <button id="initButton">Initialize Bluetooth Mesh</button>
+    <br>
+
+    <input type="text" name="PID" value="9876">
+    <br>
+    <input type="text" name="code" value="1234">
+    <br>
+
+    <button id="send">Send</button>
+
+    <script>
+        // on window load, connect to the bluetooth mesh
+        window.onload = function () {
+            let mesh;
+
+            document.getElementById('initButton').addEventListener('click', async () => {
+                try {
+                    // create a new mesh object
+                    mesh = await initializeBluetoothMesh();
+                    console.log('Bluetooth Mesh initialized');
+                } catch (error) {
+                    console.error('Error initializing Bluetooth Mesh:', error);
+                }
+            });
+
+            // send message to the mesh
+            document.getElementById('send').addEventListener('click', async () => {
+                try {
+                    // send data to the mesh
+                    await sendDataOverMesh(mesh, 'Hello, Mesh!');
+                } catch (error) {
+                    console.error('Error sending data over Bluetooth Mesh:', error);
+                }
+            });
+
+        }
+
+
+        // create a real time localization service using bluetooth mesh
+        // devices accepted must send PID and code to be accepted
+        // the code is a 4 digit number
+        // the PID is a 4 digit number
+
+
+        // Initialize Bluetooth Mesh
+        async function initializeBluetoothMesh() {
+            try {
+                // Request Bluetooth device
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['8418fa2f-2403-434f-8ad2-4ab47300af85'] }],
+                });
+
+                // Connect to the Bluetooth device
+                const server = await device.gatt.connect();
+
+                // Get the Bluetooth Mesh service
+                const meshService = await server.getPrimaryService('8418fa2f-2403-434f-8ad2-4ab47300af85');
+
+                // Return the Mesh service for further operations
+                return meshService;
+            } catch (error) {
+                console.error('Error initializing Bluetooth Mesh:', error);
+                throw error;
+            }
+        }
+
+        // Authenticate with Bluetooth Mesh
+        async function authenticateWithMesh(meshService, pid, code) {
+            try {
+                // Assuming you have characteristics for PID and code in your Mesh service
+                const pidCharacteristic = await meshService.getCharacteristic('pid');
+                const codeCharacteristic = await meshService.getCharacteristic('code');
+
+                // Convert PID and code to ArrayBuffer before writing
+                const pidArrayBuffer = new TextEncoder().encode(pid);
+                const codeArrayBuffer = new TextEncoder().encode(code);
+
+                // Write PID and code to characteristics
+                await pidCharacteristic.writeValue(pidArrayBuffer);
+                await codeCharacteristic.writeValue(codeArrayBuffer);
+
+                console.log('Authentication successful');
+            } catch (error) {
+                console.error('Error authenticating with Bluetooth Mesh:', error);
+                throw error;
+            }
+        }
+
+        // Send and receive data with Bluetooth Mesh
+        async function sendDataOverMesh(meshService, data) {
+            try {
+                // Assuming you have a characteristic for data in your Mesh service
+                const dataCharacteristic = await meshService.getCharacteristic('data');
+
+                // Convert data to ArrayBuffer before writing
+                const dataArrayBuffer = new TextEncoder().encode(data);
+
+                // Write data to the characteristic
+                await dataCharacteristic.writeValue(dataArrayBuffer);
+
+                console.log('Data sent successfully');
+            } catch (error) {
+                console.error('Error sending data over Bluetooth Mesh:', error);
+                throw error;
+            }
+        }
+
+        // Subscribe to real-time updates from Bluetooth Mesh
+        async function subscribeToMeshUpdates(meshService, callback) {
+            try {
+                // Assuming you have a characteristic for real-time updates in your Mesh service
+                const updateCharacteristic = await meshService.getCharacteristic('updates');
+
+                // Set up a notification handler
+                updateCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const updatedValue = event.target.value;
+                    const decodedData = new TextDecoder().decode(updatedValue);
+                    callback(decodedData);
+                });
+
+                // Enable notifications for the characteristic
+                await updateCharacteristic.startNotifications();
+
+                console.log('Subscribed to real-time updates');
+            } catch (error) {
+                console.error('Error subscribing to Bluetooth Mesh updates:', error);
+                throw error;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
